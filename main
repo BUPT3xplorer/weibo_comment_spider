@@ -1,0 +1,62 @@
+import re
+import requests
+import csv
+from requests.sessions import session
+
+#初始化参数说明：填入自己cookie、以及被爬取微博id即可
+weibo_id=***************
+
+
+headers = {
+
+    'Cookie' : 
+    'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36',
+    'Referer': 'https://m.weibo.cn/detail/4635403158556543',
+    'X-Requested-With': 'XMLHttpRequest',
+    'X-XSRF-TOKEN' : '5c0faa',
+    'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="90", "Google Chrome";v="90"',
+    'sec-ch-ua-mobile': '?1',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'MWeibo-Pwa': '1'
+}
+f = open("微博评论.csv",mode ='w',encoding='utf-8')
+csvwriter = csv.writer(f)
+#打开csv文件
+
+
+
+url = "https://m.weibo.cn/comments/hotflow?id={}&mid={}&max_id_type=0".format(weibo_id,weibo_id)
+session = requests.Session()
+resp = session.get(url, headers=headers)
+dict = resp.json()
+
+for j in range(len(dict['data']['data'])):
+    comment = dict['data']['data'][j]['text']
+    name = dict['data']['data'][j]['user']['screen_name']
+
+    csvwriter.writerow([name,comment])
+
+max_id_type =  dict['data']['max_id_type']
+max_id = dict['data']['max_id']
+print("now max_id="+str(max_id))
+flag_ok=dict['ok']
+print(flag_ok)
+while(flag_ok==1 and max_id!=0):
+    url = "https://m.weibo.cn/comments/hotflow?id={}&mid={}&max_id={}&max_id_type={}".format(weibo_id,weibo_id,max_id,max_id_type)
+    resp = session.get(url,headers=headers)
+    dict = resp.json()
+    flag_ok=dict['ok']
+    print("now max_id="+str(max_id))
+    if(flag_ok==1):
+        max_id = dict['data']['max_id']
+        max_id_type =  dict['data']['max_id_type']
+
+        for j in range(len(dict['data']['data'])):
+            comment = dict['data']['data'][j]['text']
+            name = dict['data']['data'][j]['user']['screen_name']  
+            time=dict['data']['data'][j]['created_at']
+            csvwriter.writerow([name,comment,time])
+print("爬爬爬！爬完了")
+
